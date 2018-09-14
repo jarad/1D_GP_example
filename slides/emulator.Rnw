@@ -1,0 +1,254 @@
+\documentclass[handout]{beamer}
+
+\usetheme{AnnArbor}
+\usecolortheme{beaver}
+
+\usefonttheme[onlymath]{serif} % uncomment for article style math
+
+\setlength{\unitlength}{\textwidth}  % measure in textwidths
+\usepackage[normalem]{ulem}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{enumerate items}[default]
+\setbeamertemplate{enumerate subitem}{\alph{enumii}.}
+\setbeamertemplate{enumerate subsubitem}{\roman{enumiii}.}
+\setkeys{Gin}{width=0.6\textwidth}
+
+\institute[ISU]{Iowa State University}
+\author{Jarad Niemi}
+\date{\today}
+
+\begin{document}
+
+
+\section{Computer models}
+\begin{frame}
+\frametitle{Computer models}
+
+\begin{definition}
+A \alert{computer model} is a set of mathematical equations, programmed in a
+computer, that takes a set of inputs and returns a set of outputs.
+\pause
+Thus, a computer model is a function $f(\cdot)$ that takes input $x$ and returns
+$f(x)$ which we may write as 
+\[ 
+x \to f(x).
+\]
+\end{definition}
+
+\pause
+
+\begin{definition}
+A \alert{computer experiment} is a single run of a computer model. 
+\pause
+Thus, a computer experiment is an input-output pair, i.e. $x$ and $f(x)$. 
+\end{definition}
+
+\pause
+
+WEPP is a computer model is it takes input rainfall and slope (among other 
+quantities) and returns sediment runoff.
+
+\end{frame}
+
+
+\subsection{Input}
+\begin{frame}
+\frametitle{Inputs}
+
+Inputs to a computer model often take the following forms:
+\begin{itemize}[<+->]
+\item $\theta$: fixed parameter that correspond to physical constants
+\item $x$: varying input that are allowed to change
+  \begin{itemize}
+  \item specified input: scientist/researcher can set these
+  \item random input: scientist/researcher don't control these
+  \end{itemize}
+\end{itemize}
+
+\pause
+
+WEPP likely has all 3 types of input, e.g. 
+\begin{itemize}
+\item coefficient of friction (fixed parameter)
+\item tillage practice (specified input)
+\item rainfall (random input)
+\end{itemize}
+
+\pause
+
+Thus, we may rewrite our model as 
+\[ 
+x,\theta \to f(x,\theta).
+\]
+
+\end{frame}
+
+
+\subsection{Calibration}
+\begin{frame}
+\frametitle{Calibration}
+
+\begin{definition}
+\alert{Experimental data} is an input-output pair $x_i$ and $y_i$ obtained 
+from a real (as opposed to computer) experiment.
+\end{definition}
+
+\pause
+
+\begin{definition}
+\alert{Calibration} is the process of using data to estimate fixed parameters
+in a computer model.
+\end{definition}
+
+\pause
+
+Then, we may estimate $\theta$ using least squares, 
+i.e. 
+\[
+\hat\theta = \mbox{argmin}_{\theta} \sum_{i=1}^n [y_i-f(x_i,\theta)]^2
+\]
+where $x_i$ and $y_i$ refer to real data input-output pairs.
+\pause
+Note that there is no $\theta$ in the data because in the real world $\theta$
+is something that we don't observe.
+\end{frame}
+
+
+
+\section{Gaussian process}
+\begin{frame}
+\frametitle{Gaussian process}
+
+The least-squares approach on the previous slide is equivalent to the following
+statistical model
+\[ 
+y_i = f(x_i,\theta) + \epsilon_i \qquad \epsilon_i \stackrel{ind}{\sim} N(0,\sigma^2).
+\]
+\pause
+For a given $\theta$ where the goal is to estimate $f(\cdot,\theta)$, 
+this is referred to as a \alert{non-linear regression} problem.
+
+\pause 
+
+\begin{definition}
+A \alert{Gaussian process} is one statistical approach to estimate 
+$f(\cdot,\theta)$ in a non-linear regression problem. 
+The basic idea is to assume the computer model outputs are jointly normal and 
+that their relationship between these points is determined by how close the 
+points are in the $x$ space, 
+\pause i.e. observations that have similar $x$ values should 
+have similar $y$ values.
+\end{definition}
+
+\end{frame}
+
+
+\subsection{Emulator}
+\begin{frame}
+\frametitle{Emulator}
+
+\begin{definition}
+An \alert{emulator} of a computer model is a set of mathematical equations that
+can predict what the computer model will produce and provide a measure of 
+uncertainty. 
+\end{definition}
+
+\pause
+
+A Gaussian process (GP) can be used as an emulator. 
+\pause
+Suppose you want to predict the output $\tilde{y}$ at a particular input location
+$\tilde{x}$. 
+\pause
+The GP prediction is 
+\[ 
+\tilde{y} \sim N(\tilde{\mu},\tilde{\sigma}^2)
+\]
+\pause 
+where 
+\begin{itemize}
+\item $\tilde{\mu}$ is a weighted average of all the computer model outputs \pause
+where the weights are inversely proportional to the distance in $x$ space from $\tilde{x}$ to the other points \pause and
+\item $\tilde{\sigma}$ provides uncertainty; its smallest near the center of all the input points and largest at the extremes. 
+\end{itemize}
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{}
+<<echo=FALSE, fig.height=5, fig.width=7>>=
+set.seed(1)
+n <- 30
+x1 <- runif(n)
+x2 <- runif(n)
+opar = par(mfrow=c(1,2))
+plot(x1, x2, pch='x', main='low uncertainty', xlim=0:1, ylim=0:1)
+points(0.5,0.5, col='red', pch=19)
+plot(x1, x2, pch='x', main='high uncertainty', xlim=0:1, ylim=0:1)
+points(1, 1, col='red', pch=19)
+par(opar)
+@
+\end{frame}
+
+
+\subsection{Emulator uses}
+\begin{frame}
+\frametitle{Emulator uses}
+
+\begin{itemize}
+\item Computer model alone
+  \begin{itemize}
+  \item Irrelevant regions: Understanding which regions of the input space are relevant
+  \item Computer model learning: what computer experiment should I run to maximum information learned
+  \item Optimization: what inputs result in maximum/minimal output
+  \end{itemize}
+
+\item Computer model with data
+  \begin{itemize}
+  \item Calibration: estimate those fixed parameters
+  \item Bias: evaluate 
+  \item Design: where should I gather data to improve my model?
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+
+
+
+\section{WEPP}
+\begin{frame}
+\frametitle{WEPP}
+
+
+
+What are the
+\begin{itemize}
+\item fixed parameters,
+\item specified input, and
+\item random input?
+\end{itemize}
+
+\pause
+
+How can we run the model?
+\begin{itemize}
+\item Linux command line executable
+\item Input file(s)
+\item Output file(s)
+\item Python scripts
+\end{itemize}
+
+\vspace{0.1in} \pause
+
+{\tiny
+\url{https://www.ars.usda.gov/midwest-area/west-lafayette-in/national-soil-erosion-research/docs/wepp/research/}
+
+\url{https://dailyerosion.org/docs/}
+}
+
+\end{frame}
+
+\end{document}
